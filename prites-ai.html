@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prite's AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #060401;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Crimson Text', Georgia, serif;
+    padding: 16px;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 680px;
+    background: #0e0b04;
+    border: 1px solid #6b4f14;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 92vh;
+    max-height: 780px;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(180,130,20,0.07), 0 30px 80px rgba(0,0,0,0.9);
+  }
+
+  .header {
+    background: linear-gradient(180deg, #231a04 0%, #160f02 100%);
+    border-bottom: 1px solid #5a3e0e;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .crest {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(145deg, #c49a0e, #7a5a08);
+    border: 1.5px solid #d4a017;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .header-text { flex: 1; }
+
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #d4a017;
+    letter-spacing: 0.1em;
+  }
+
+  .header-sub {
+    font-size: 11px;
+    color: #7a5a20;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    background: #4aaa4a;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(74,170,74,0.6);
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #4a3510 #0e0b04;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: #0e0b04; }
+  .messages::-webkit-scrollbar-thumb { background: #4a3510; border-radius: 2px; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    color: #3a2808;
+    letter-spacing: 0.14em;
+    flex-shrink: 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #221804;
+  }
+
+  .msg {
+    display: flex;
+    gap: 8px;
+    max-width: 87%;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.bot  { align-self: flex-start; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #4a3510;
+    font-size: 14px;
+  }
+  .msg.bot  .avatar { background: #1a1204; color: #d4a017; }
+  .msg.user .avatar {
+    background: #0c180c;
+    color: #5aaa5a;
+    border-color: #1e4a1e;
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+  }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+  .msg.bot  .bubble { background: #131005; border: 1px solid #2e2008; color: #deca96; }
+  .msg.user .bubble { background: #0a160a; border: 1px solid #1a3a1a; color: #b0d0b0; }
+
+  .bubble b  { color: #d4a017; font-weight: 600; }
+  .bubble ul { margin: 6px 0 4px 18px; }
+  .bubble li { margin: 3px 0; font-size: 14.5px; }
+  .bubble p  { margin: 6px 0 0; }
+  .bubble p:first-child { margin-top: 0; }
+  .bubble p:empty { margin: 2px 0; }
+
+  .typing-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .typing-dots span {
+    width: 6px; height: 6px;
+    background: #6b4f14;
+    border-radius: 50%;
+    animation: bounce 1.2s ease infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%            { transform: translateY(-5px); opacity: 1; }
+  }
+
+  .quick-wrap {
+    padding: 8px 16px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-top: 1px solid #1a1204;
+    flex-shrink: 0;
+  }
+
+  .qbtn {
+    background: #110d02;
+    border: 1px solid #2e2008;
+    color: #9a7818;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-family: 'Crimson Text', serif;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .qbtn:hover { background: #1e1605; border-color: #6b4f14; color: #d4a017; }
+
+  .ornament {
+    text-align: center;
+    color: #2e2008;
+    font-size: 12px;
+    padding: 3px 0 4px;
+    letter-spacing: 0.2em;
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    border-top: 1px solid #221804;
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+    background: #0a0802;
+  }
+
+  #chat-input {
+    flex: 1;
+    background: #110d02;
+    border: 1px solid #2e2008;
+    color: #deca96;
+    padding: 9px 13px;
+    border-radius: 5px;
+    font-family: 'Crimson Text', serif;
+    font-size: 15px;
+    resize: none;
+    min-height: 40px;
+    max-height: 110px;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #chat-input:focus       { border-color: #6b4f14; }
+  #chat-input::placeholder { color: #3a2808; font-style: italic; }
+
+  #send-btn {
+    background: linear-gradient(180deg, #c49a0e, #8b6914);
+    border: 1.5px solid #d4a017;
+    color: #0a0802;
+    padding: 9px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    transition: all 0.15s;
+    white-space: nowrap;
+    min-height: 40px;
+  }
+  #send-btn:hover    { background: linear-gradient(180deg, #d4a017, #9e7c1a); }
+  #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="crest">⚔</div>
+    <div class="header-text">
+      <div class="header-title">PRITE'S AI</div>
+      <div class="header-sub">Season II · The Medieval Experiment</div>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="divider">WELCOME, TRAVELLER</div>
+    <div class="msg bot">
+      <div class="avatar">⚔</div>
+      <div class="bubble">
+        <p>Hello! I am <b>Prite's AI</b>, I know everything about his events and server.</p>
+        <p>Ask me anything, from <b>war rules</b> and <b>blacklisted items</b> to <b>nation building</b>, <b>kill tickets</b>, and <b>VIP roles</b>. I am here to guide you.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-wrap" id="quick-wrap">
+    <button class="qbtn" onclick="sendQuick('What items are blacklisted?')">⚗ Blacklisted items</button>
+    <button class="qbtn" onclick="sendQuick('What are the killing and RDM rules?')">⚔ Killing rules</button>
+    <button class="qbtn" onclick="sendQuick('How do nations work?')">🏰 Nations</button>
+    <button class="qbtn" onclick="sendQuick('What mods are allowed or banned?')">🛡 Allowed mods</button>
+    <button class="qbtn" onclick="sendQuick('What is meta-gaming and why is it banned?')">👁 Meta-gaming</button>
+    <button class="qbtn" onclick="sendQuick('How do I get VIP?')">✦ VIP role</button>
+    <button class="qbtn" onclick="sendQuick('What are the Discord rules?')">💬 Discord rules</button>
+    <button class="qbtn" onclick="sendQuick('What happens when I die in an event?')">💀 One life rule</button>
+  </div>
+
+  <div class="ornament">— ✦ —</div>
+
+  <div class="input-row">
+    <textarea id="chat-input" placeholder="Ask about rules, nations, events…" rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()">SEND</button>
+  </div>
+
+</div>
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl    = document.getElementById('chat-input');
+const sendBtn    = document.getElementById('send-btn');
+const quickWrap  = document.getElementById('quick-wrap');
+
+const rules = [
+  {
+    keywords: ['blacklist', 'banned item', 'forbidden item', 'prohibited item', 'items'],
+    response: `The following items are <b>blacklisted</b> and cannot be used, obtained, or interacted with:<ul><li>Ender Pearls</li><li>Fireworks</li><li>The Nether</li><li>The End</li><li>The Mace</li><li>Crystals</li><li>TNT Minecarts</li><li>Enchanted Golden Apples</li><li>Totems of Undying</li><li>All Potions</li><li>Suspicious Stews</li></ul>If an admin broadcasts a new blacklisted item, you may not use it from that moment onwards.`
+  },
+  {
+    keywords: ['ban', 'punish', 'punishment', 'appeal', 'wrongly'],
+    response: `<b>Punishments & Appeals:</b><ul><li>Punishments can be enforced by a staff member at any point.</li><li>Punishment severity may vary based on the situation.</li><li>If you believe you were wrongly punished, you may <b>appeal</b>.</li><li>Actions may still break the rules even if not explicitly stated.</li></ul>`
+  },
+  {
+    keywords: ['grace period', 'grace'],
+    response: `During a <b>grace period</b> (Day 1 and Day 2 of an event):<ul><li>RDM (Random Death Match) is <b>not allowed</b>.</li><li>Indirect kills such as lava traps are <b>strictly banned</b> and will result in a ban.</li><li>You may only kill someone if they are actively stealing from you.</li></ul>`
+  },
+  {
+    keywords: ['combat log', 'combat-log', 'log out', 'logout', 'disconnect'],
+    response: `<b>Combat-logging</b> — logging out during combat — is <b>strictly against the rules</b> and will result in a punishment.`
+  },
+  {
+    keywords: ['rage quit', 'ragequit', 'rage-quit', 'leave', 'quit'],
+    response: `<b>Rage quitting</b> should never occur. The event is intended to be fun for everyone. If you lose or die, accept it gracefully and do not make a scene in public chats.`
+  },
+  {
+    keywords: ['ticket', 'make a ticket', 'support', 'how do i report'],
+    response: `For most issues, you should <b>make a ticket</b> in the Prite Events Discord. This includes:<ul><li>Kill requests (kill tickets)</li><li>Reporting a player</li><li>Appealing a punishment</li><li>Applying for VIP or Content Creator</li><li>Any lore-based plans needing approval</li></ul>Do <b>not</b> DM staff directly — always use a ticket. Reports require <b>video evidence</b> or they will be ignored.`
+  },
+  {
+    keywords: ['forsaken', 'forsaken paradise', 'smp', 'chloe'],
+    response: `Prite Events has a collaboration with <b>Forsaken Paradise</b>! The Prite SMP is hosted on Forsaken Paradise, run by a member of the staff team. It is known as <b>Forsaken Paradise X Prite Events</b>.`
+  },
+  {
+    keywords: ['nsfw', 'explicit', 'inappropriate', 'graphic', 'gore'],
+    response: `<b>NSFW, explicit violent content, and gruesome imagery</b> are strictly prohibited in all Prite servers. Prite Events is meant to be a safe and comfortable place for everyone. Breaking this rule will result in a <b>ban</b>.`
+  },
+  {
+    keywords: ['political', 'controversy', 'controversial', 'politics'],
+    response: `Discussing <b>controversial or political topics</b> is not allowed in Prite servers. This is to keep Prite Events a comfortable space for everyone. Breaking this rule will result in a <b>mute</b>.`
+  },
+  {
+    keywords: ['dm', 'direct message', 'message someone'],
+    response: `You must <b>not DM</b> other members of the server to recruit them into your nation or advertise anything. DMing staff members is also discouraged — always <b>make a ticket</b> instead.`
+  },
+  {
+    keywords: ['what is prite', 'about prite', 'what is this', 'explain prite'],
+    response: `<b>Prite Events</b> is a medieval Minecraft civilisation event server, currently on <b>Season II: The Medieval Experiment</b>. Events focus on lore, story, nation building, wars, and community — not just fighting. The goal is never to win; it is always <b>community</b>.`
+  },
+  {
+    keywords: ['enchant', 'enchantment', 'enchanted'],
+    response: `<b>Enchantments</b> are <b>not banned</b> in Prite Events, however they are <b>limited</b>. Note that <b>Enchanted Golden Apples</b> specifically are blacklisted and cannot be used.`
+  },
+  {
+    keywords: ['spam', 'gif', 'repeatedly'],
+    response: `Spamming and repeatedly sending gifs or messages is <b>not allowed</b> in any Prite server. This includes unintentional spam. Breaking this rule will result in a <b>mute</b>.`
+  },
+  {
+    keywords: ['harassment', 'hate', 'racism', 'slur', 'discriminat'],
+    response: `<b>Discrimination, hate, harassment, racial slurs, and dehumanizing language</b> are strictly prohibited in all Prite servers. Prite Events is meant to be a safe and respectful community. Breaking this rule results in a <b>mute</b>, with repeated offences leading to a <b>ban</b>.`
+  },
+  {
+    keywords: ['patreon', 'boost', 'booster', 'supporter', 'donate'],
+    response: `You can support Prite Events through <b>Patreon</b>, which gives you the <b>VIP++</b> role. <b>VIP+</b> is given to server Boosters. Both roles grant access to the <b>#advertisements</b> channel.`
+  },
+  {
+    keywords: ['season', 'season 2', 'season ii', 'medieval experiment', 'current season'],
+    response: `Prite Events is currently on <b>Season II: The Medieval Experiment</b>. This is a medieval Minecraft civilisation event focused on nation building, lore, alliances, wars, and community.`
+  },
+  {
+    keywords: ['bedrock', 'java', 'edition', 'platform'],
+    response: `The knowledge base does not contain specific information about Bedrock or Java edition compatibility. Please make a <b>ticket</b> in the Discord or ask in the official channels for clarification.`
+  },
+  {
+    keywords: ['rdm', 'random death', 'kill', 'killing', 'kill ticket', 'murder'],
+    response: `<b>Killing rules:</b><ul><li>To kill someone for a lore reason, you must make a <b>kill ticket</b> first. It may not be approved.</li><li>If your ticket was denied or you didn't make one, you may <b>not</b> kill.</li><li>During <b>grace periods</b>, indirect kills (e.g. lava traps) are strictly banned.</li><li>If someone is actively stealing from you, you may kill them without a ticket.</li><li>RDM is <b>not allowed on Day 1 or Day 2</b>. After that it is generally permitted unless staff says otherwise.</li><li>Combat-logging is strictly against the rules.</li><li>If a staff member tells you not to kill someone, you must comply.</li></ul>`
+  },
+  {
+    keywords: ['nation', 'recruit', 'pre-make', 'premake', 'pre make'],
+    response: `<b>Nation rules:</b><ul><li>Pre-making a nation is allowed under certain conditions.</li><li>You <b>cannot</b> recruit people before the official recruitment date.</li><li>You <b>may</b> invite 5–10 close friends before the official date.</li><li>By recruitment time, a nation should have no more than <b>15 people</b>.</li><li>Making a Discord server for your nation is allowed at any time.</li><li>DMing people to advertise your nation is heavily against the rules.</li></ul>`
+  },
+  {
+    keywords: ['mod', 'mods', 'client', 'minimap', 'mini map', 'xray', 'x-ray', 'shader', 'performance'],
+    response: `<b>Allowed mods:</b> Performance mods, Replay mod, Shader packs, Audio mods, Content creation tools.<br><br><b>Banned mods/clients:</b><ul><li>Mini-maps (even without player indicators)</li><li>World maps</li><li>Hacked clients</li><li>X-ray texture packs</li><li>Health indicators</li></ul>Note: Enchantments are <b>not</b> banned but are limited.`
+  },
+  {
+    keywords: ['meta', 'metagame', 'meta-game', 'meta game', 'metagaming', 'discord vc', 'spy', 'stream snipe'],
+    response: `<b>Meta-gaming is strictly prohibited.</b> This includes:<ul><li>Holding meetings in Discord VCs for lore or game purposes</li><li>Using any platform to spy on other players</li><li>Using Replay mod or screen shares without admin permission</li><li>Stream sniping</li><li>Doing lore-relevant actions outside of Minecraft</li></ul>This rule applies even if you <b>leave the event</b>. Breaking it results in a sanction or ban.`
+  },
+  {
+    keywords: ['vip', 'rank', 'role', 'vip+', 'vip++'],
+    response: `<b>VIP</b> means you have impressed the Prite Events staff. Suggestions to get it (not guaranteed):<ul><li>Reach Level 50 on the server</li><li>Advertise Prite Events in an equal or larger server</li><li>Play in 10 or more Prite Events (mini events count)</li><li>Post a long-form POV video of one of the events</li></ul>Make a ticket to apply. <b>VIP+</b> is for server Boosters. <b>VIP++</b> is for Patreon Members.`
+  },
+  {
+    keywords: ['content creator', 'creator', 'youtube', 'streamer', 'subscriber'],
+    response: `To get the <b>Content Creator</b> role you need:<ul><li>200+ subscribers</li><li>A video about Prite Events</li></ul>Make a ticket to apply.`
+  },
+  {
+    keywords: ['discord rule', 'server rule', 'chat rule'],
+    response: `<b>Discord Rules:</b><ul><li>No hate, harassment, or discrimination — mute then ban</li><li>No threats or toxic behavior — immediate ban</li><li>No spam or repeatedly sending gifs/messages — mute</li><li>Follow Discord Terms of Service</li><li>No self-advertisement outside #advertisements — ban</li><li>No NSFW or graphic content — ban</li><li>No controversial or political topics — mute</li><li>Only speak English</li></ul>`
+  },
+  {
+    keywords: ['grief', 'griefing', 'steal', 'stealing', 'destroy', 'build'],
+    response: `<b>Griefing & Stealing rules:</b><ul><li>Griefing (destroying builds or player-owned territory) is <b>not allowed</b>. You will be banned.</li><li>Stealing to survive from a nearby chest is fine.</li><li>Going house-to-house looting is <b>not allowed</b>.</li><li>Lore-based griefing (e.g. burning an enemy city) may be approved via a kill ticket.</li><li>Staff have the final say.</li></ul>`
+  },
+  {
+    keywords: ['war', 'attack', 'outbreak', 'invasion'],
+    response: `<b>War rules:</b><ul><li>You <b>must</b> tell an admin before attacking and get their approval.</li><li>Failing to notify an admin can result in nation leaders being <b>banned</b>.</li><li>If your attack is denied, do not cause a scene in any chat or voice channel.</li></ul>`
+  },
+  {
+    keywords: ['die', 'death', 'one life', 'hardcore', 'respawn', 'revive'],
+    response: `Prite Events uses a <b>one-life (hardcore-style)</b> system:<ul><li>Once you die, you <b>cannot play</b> in that event anymore.</li><li>Be ready to lose and die — do not make a big deal about it in public chats.</li><li>Rage quitting should never occur.</li><li>Admins spectate and moderate throughout the event.</li></ul>`
+  },
+  {
+    keywords: ['stream', 'record', 'video', 'upload'],
+    response: `You may <b>stream or record</b> events freely. By participating, you agree your voice may be recorded and uploaded to Prite's and other members' channels.`
+  },
+  {
+    keywords: ['moderator', 'staff', 'admin', 'report', 'issue'],
+    response: `<b>Staff rules:</b><ul><li>All moderators must be respected.</li><li>Do <b>not</b> DM staff — make a ticket instead.</li><li>If you have an issue with a staff member, make a formal report.</li><li>Staff decisions are final. Do not argue.</li><li>Reports without <b>video evidence</b> will be ignored.</li></ul>`
+  },
+  {
+    keywords: ['goal', 'point', 'win', 'winning', 'purpose'],
+    response: `The goal of Prite Events is <b>never to win</b> — it's <b>community</b> and entertainment. Events are about lore, story, and the experience shared with others.`
+  },
+  {
+    keywords: ['apply', 'join', 'application', 'how to join', 'enter'],
+    response: `To join a Prite Event:<ul><li>Apply in the <b>#applications</b> channel on the Discord.</li><li>A <b>video application</b> boosts your odds of acceptance.</li><li>When an event is full or the deadline is reached, applications may close.</li><li>You can join the Discord community without playing.</li></ul>`
+  },
+  {
+    keywords: ['nether', 'end', 'dimension'],
+    response: `Access to <b>The Nether</b> and <b>The End</b> is <b>strictly banned</b> during events. Neither dimension should be accessed at any point.`
+  },
+  {
+    keywords: ['advertise', 'advertisement', 'promote', 'self promo'],
+    response: `You may <b>not</b> advertise your own servers, videos, or channels in Prite servers — except in the dedicated <b>#advertisements</b> channel, which is only available to VIP, VIP+, and VIP++ members.`
+  },
+  {
+    keywords: ['language', 'english', 'speak'],
+    response: `You must <b>only speak English</b> in Prite servers. This is so moderators can correctly and safely moderate the community.`
+  },
+  {
+    keywords: ['hello', 'hi', 'hey', 'hail', 'greetings', 'sup', 'what can you do', 'help'],
+    response: `Hail, traveller! I am <b>Prite's AI</b>, here to answer your questions about Prite Events. Ask me about:<ul><li>Blacklisted items</li><li>Killing & kill tickets</li><li>Nation building</li><li>Allowed & banned mods</li><li>War rules</li><li>Meta-gaming</li><li>VIP & Creator roles</li><li>Discord rules</li><li>And much more!</li></ul>`
+  },
+  {
+    keywords: ['stealing plan denied', 'plan denied', 'denied plan', 'steal denied'],
+    response: `If your elaborate stealing plan is <b>denied by an admin</b>, you agree not to make a scene in chat, Discord chat, or voice chats. This is because it may affect gameplay being recorded by Prite or other members.`
+  },
+  {
+    keywords: ['self role', 'self-role', 'ping', 'notification', 'notify', 'alerts'],
+    response: `If you want to be pinged for specific things at Prite Events, go to the <b>#self-role</b> channel in the Discord. You can add or remove pings there at any time.`
+  },
+  {
+    keywords: ['qotd', 'question of the day', 'daily question'],
+    response: `<b>QOTD (Question Of The Day)</b> are daily questions posted in the Prite Events Discord. You can answer them and see what other members have to say.`
+  },
+  {
+    keywords: ['terms of service', 'tos', 'community guidelines', 'discord tos'],
+    response: `All members must follow the <b>Discord Terms of Service</b> and <b>Community Guidelines</b> at all times in Prite servers. Breaking this rule will result in a <b>ban</b>.`
+  },
+  {
+    keywords: ['lore', 'story', 'roleplay', 'rp'],
+    response: `Prite Events is heavily focused on <b>lore and storytelling</b>. Civilisation Events are about building a story, not just fighting. Lore-relevant actions such as wars, kills, and nation decisions must be kept <b>inside Minecraft only</b> — doing lore actions on outside platforms is considered meta-gaming.`
+  },
+  {
+    keywords: ['alliance', 'ally', 'allies', 'forge', 'diplomacy'],
+    response: `Alliances between nations are a core part of Prite Events! You can <b>forge alliances</b>, build diplomacy, and work with other nations. However, all major actions like wars still require <b>admin approval</b> before proceeding.`
+  },
+  {
+    keywords: ['evidence', 'proof', 'video evidence', 'clip'],
+    response: `If you report a player to staff, you <b>must provide video evidence</b>. Reports without video evidence will be <b>ignored</b>. Make sure to clip or record any rule-breaking behaviour before submitting a ticket.`
+  },
+];
+
+function getResponse(input) {
+  const lower = input.toLowerCase();
+  for (const rule of rules) {
+    if (rule.keywords.some(k => lower.includes(k))) {
+      return rule.response;
+    }
+  }
+  return `I don't have specific information on that. Try again`;
+}
+
+function addMessage(role, html) {
+  const isBot = role === 'bot';
+  const wrap  = document.createElement('div');
+  wrap.className = 'msg ' + (isBot ? 'bot' : 'user');
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.textContent = isBot ? '⚔' : 'YOU';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = html;
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function showTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot';
+  wrap.id = 'typing-indicator';
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.textContent = '⚔';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  quickWrap.style.display = 'none';
+  inputEl.value = '';
+  inputEl.style.height = '40px';
+  sendBtn.disabled = true;
+
+  addMessage('user', text.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+  showTyping();
+
+  setTimeout(() => {
+    removeTyping();
+    addMessage('bot', getResponse(text));
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }, 600);
+}
+
+function sendQuick(text) {
+  inputEl.value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = '40px';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+</script>
+</body>
+</html>
